@@ -11,7 +11,6 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
-      <h1 className="text-4xl font-bold mb-8 text-gray-800">Welcome to SmartBox</h1>
       <button
         onClick={handleGoogleLogin}
         className="px-6 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition"
