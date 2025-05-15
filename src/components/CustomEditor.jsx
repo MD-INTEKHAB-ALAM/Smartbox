@@ -9,11 +9,13 @@ const variables = [
 
 export default function CustomEditor({ initialContent, onSave }) {
   const [showVariablesMenu, setShowVariablesMenu] = useState(false);
+  const [content, setContent] = useState(initialContent || "");
   const editorRef = useRef(null);
 
   useEffect(() => {
     if (editorRef.current) {
       editorRef.current.innerHTML = initialContent || "";
+      setContent(initialContent || "");
     }
   }, [initialContent]);
 
@@ -34,22 +36,27 @@ export default function CustomEditor({ initialContent, onSave }) {
     sel.addRange(range);
 
     editorRef.current.focus();
+    setContent(editorRef.current.innerHTML);
+  }
+
+  function handleInput() {
+    if (editorRef.current) {
+      setContent(editorRef.current.innerHTML);
+    }
   }
 
   function handleSave() {
-    if (editorRef.current) {
-      onSave(editorRef.current.innerHTML);
-    }
+    onSave(content);
     setShowVariablesMenu(false);
   }
 
   return (
-    <div className="custom-editor border rounded p-2 bg-white">
+    <div className="custom-editor border rounded p-2 bg-white dark:bg-gray-800 dark:border-gray-700 transition-colors duration-300">
       <div className="flex space-x-2 mb-2">
         <button
           type="button"
           onClick={handleSave}
-          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-300"
         >
           SAVE
         </button>
@@ -58,17 +65,17 @@ export default function CustomEditor({ initialContent, onSave }) {
           <button
             type="button"
             onClick={() => setShowVariablesMenu((v) => !v)}
-            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-300"
           >
             Variables
           </button>
 
           {showVariablesMenu && (
-            <ul className="absolute mt-1 bg-white border rounded shadow w-40 z-10">
+            <ul className="absolute mt-1 bg-white dark:bg-gray-700 border dark:border-gray-600 rounded shadow w-40 z-10 transition-colors duration-300">
               {variables.map((v) => (
                 <li
                   key={v.value}
-                  className="p-2 hover:bg-gray-100 cursor-pointer"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer transition-colors duration-200"
                   onClick={() => {
                     insertAtCursor(v.value);
                     setShowVariablesMenu(false);
@@ -85,7 +92,8 @@ export default function CustomEditor({ initialContent, onSave }) {
       <div
         ref={editorRef}
         contentEditable
-        className="min-h-[100px] p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="min-h-[100px] p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-900 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 transition-colors duration-300"
+        onInput={handleInput}
         suppressContentEditableWarning={true}
         spellCheck={false}
       />
