@@ -1,3 +1,4 @@
+// src/pages/OneboxPage.jsx
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { setToken as storeToken, getToken } from "../utils/auth";
@@ -14,8 +15,9 @@ export default function OneboxPage() {
   const [token, setToken] = useState("");
   const [selectedThreadId, setSelectedThreadId] = useState(null);
   const [replyBoxOpen, setReplyBoxOpen] = useState(false);
-  const [replyBody, setReplyBody] = useState("");
+  const [replyHtml, setReplyHtml] = useState("");
 
+  // Get token from URL or localStorage on mount
   useEffect(() => {
     const urlToken = searchParams.get("token");
     if (urlToken) {
@@ -32,6 +34,7 @@ export default function OneboxPage() {
     }
   }, [searchParams, setSearchParams, navigate]);
 
+  // Fetch threads list when token ready
   useEffect(() => {
     if (!token) return;
     setError("");
@@ -45,9 +48,7 @@ export default function OneboxPage() {
       .then(({ status, data, message }) => {
         if (status === 200 && Array.isArray(data)) {
           setThreads(data);
-          if (data.length > 0) {
-            setSelectedThreadId(data[0].threadId || data[0].id);
-          }
+          if (data.length > 0) setSelectedThreadId(data[0].threadId || data[0].id);
         } else {
           throw new Error(message || "Failed to load threads");
         }
@@ -55,6 +56,7 @@ export default function OneboxPage() {
       .catch((err) => setError("Error loading threads: " + err.message));
   }, [token]);
 
+  // Delete thread
   const deleteThread = (threadId) => {
     if (!threadId) return;
     if (!window.confirm("Delete this thread?")) return;
@@ -79,6 +81,7 @@ export default function OneboxPage() {
       .catch((err) => setError("Error deleting thread: " + err.message));
   };
 
+  // Reset inbox
   const resetInbox = () => {
     setError("");
     fetch(`${API_BASE}/reset`, {
@@ -91,6 +94,7 @@ export default function OneboxPage() {
       .then(({ status, data, message }) => {
         if (status === 200) {
           alert(data);
+          // refetch threads
           return fetch(`${API_BASE}/list`, {
             headers: { Authorization: `Bearer ${token}` },
           });
@@ -101,14 +105,13 @@ export default function OneboxPage() {
       .then((res) => res.json())
       .then(({ data }) => {
         setThreads(data);
-        if (data.length > 0) {
-          setSelectedThreadId(data[0].threadId || data[0].id);
-        }
+        if (data.length > 0) setSelectedThreadId(data[0].threadId || data[0].id);
         setReplyBoxOpen(false);
       })
       .catch((err) => setError("Error resetting inbox: " + err.message));
   };
 
+  // Keyboard shortcuts for delete (D) and reply (R)
   useEffect(() => {
     const onKeyDown = (e) => {
       if (!selectedThreadId) return;
@@ -125,28 +128,37 @@ export default function OneboxPage() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [selectedThreadId]);
 
+  // Send reply handler
   const sendReply = () => {
-    if (!replyBody.trim()) {
+    if (!replyHtml.trim()) {
       alert("Reply cannot be empty");
       return;
     }
     setError("");
+
     const thread = threads.find((t) => (t.threadId || t.id) === selectedThreadId);
     if (!thread) {
       setError("Selected thread not found");
       return;
     }
 
+    // Validate from and to emails
+    const fromEmail = "your-real-email@example.com"; // <<< REPLACE with your real sender email
+    const toEmail = thread.fromEmail || "";
+
+    if (!fromEmail.includes("@") || !toEmail.includes("@")) {
+      setError("Invalid sender or recipient email");
+      return;
+    }
+
     const payload = {
-      toName: thread.fromName || "",
-      to: thread.fromEmail,
-      from: "your-email@example.com", // replace as needed
-      fromName: "Your Name", // replace as needed
-      subject: `Re: ${thread.subject}`,
-      body: replyBody,
-      references: [],
-      inReplyTo: thread.messageId || "",
+      from: fromEmail,
+      to: toEmail,
+      subject: `Re: ${thread.subject || ""}`,
+      body: replyHtml,
     };
+
+    console.log("Sending reply with payload:", payload);
 
     fetch(`${API_BASE}/reply/${selectedThreadId}`, {
       method: "POST",
@@ -163,7 +175,7 @@ export default function OneboxPage() {
       .then(({ status, message }) => {
         if (status === 200) {
           alert("Reply sent!");
-          setReplyBody("");
+          setReplyHtml("");
           setReplyBoxOpen(false);
         } else {
           throw new Error(message || "Failed to send reply");
@@ -216,17 +228,13 @@ export default function OneboxPage() {
                   Delete
                 </button>
 
-                {/* Reply box with CustomEditor */}
+                {/* Reply box */}
                 {isSelected && replyBoxOpen && (
-                  <div className="mt-4">
+                  <div className="mt-4 p-3 bg-white border rounded shadow">
                     <CustomEditor
-                      initialContent={replyBody}
-                      onSave={(content) => {
-                        setReplyBody(content);
-                        alert("Content saved!");
-                      }}
+                      initialContent={replyHtml}
+                      onSave={(content) => setReplyHtml(content)}
                     />
-
                     <div className="mt-2 flex justify-end space-x-2">
                       <button
                         onClick={() => setReplyBoxOpen(false)}
@@ -235,8 +243,9 @@ export default function OneboxPage() {
                         Cancel
                       </button>
                       <button
-                        onClick={() => sendReply()}
+                        onClick={sendReply}
                         className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        disabled={!replyHtml.trim()}
                       >
                         Send Reply
                       </button>

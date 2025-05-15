@@ -1,3 +1,4 @@
+// src/components/CustomEditor.jsx
 import React, { useState, useEffect, useRef } from "react";
 
 const variables = [
@@ -10,14 +11,12 @@ export default function CustomEditor({ initialContent, onSave }) {
   const [showVariablesMenu, setShowVariablesMenu] = useState(false);
   const editorRef = useRef(null);
 
-  // On initial load, set content once only
   useEffect(() => {
     if (editorRef.current) {
       editorRef.current.innerHTML = initialContent || "";
     }
   }, [initialContent]);
 
-  // Insert text at cursor inside contentEditable
   function insertAtCursor(text) {
     const sel = window.getSelection();
     if (!sel || !sel.rangeCount) return;
@@ -28,7 +27,6 @@ export default function CustomEditor({ initialContent, onSave }) {
     const textNode = document.createTextNode(text);
     range.insertNode(textNode);
 
-    // Move caret after inserted text
     range.setStartAfter(textNode);
     range.setEndAfter(textNode);
 
@@ -36,11 +34,6 @@ export default function CustomEditor({ initialContent, onSave }) {
     sel.addRange(range);
 
     editorRef.current.focus();
-  }
-
-  function handleInput() {
-    // We do not set state on every input to avoid re-render issues
-    // User can save content explicitly by clicking SAVE button
   }
 
   function handleSave() {
@@ -93,7 +86,6 @@ export default function CustomEditor({ initialContent, onSave }) {
         ref={editorRef}
         contentEditable
         className="min-h-[100px] p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        onInput={handleInput}
         suppressContentEditableWarning={true}
         spellCheck={false}
       />
